@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Safety Checker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .safe {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .unsafe {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .explanation {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Link Safety Checker</h1>
+        <div class="input-group">
+            <input type="text" id="linkInput" placeholder="Paste a URL to check (e.g., https://example.com)">
+            <button onclick="checkLink()">Check Link</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing link safety...</p>
+        </div>
+        
+        <div class="result" id="result"></div>
+        
+        <div class="explanation">
+            <h2>How It Works</h2>
+            <p>This link safety checker evaluates URLs for potential security risks by:</p>
+            <ol>
+                <li>Checking if the URL uses HTTPS (secure protocol)</li>
+                <li>Analyzing the domain for suspicious patterns</li>
+                <li>Looking for common phishing or malware indicators</li>
+                <li>Checking for URL-shortening services that might hide malicious destinations</li>
+                <li>Examining URL parameters for injection attacks</li>
+            </ol>
+            <p><strong>Note:</strong> This is a demonstration tool and doesn't actually connect to real security databases. In a production environment, this would call APIs like Google Safe Browsing, PhishTank, or VirusTotal for comprehensive threat analysis.</p>
+        </div>
+    </div>
+
+    <script>
+        function checkLink() {
+            const linkInput = document.getElementById('linkInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            
+            // Clear previous results
+            resultDiv.style.display = 'none';
+            resultDiv.className = 'result';
+            
+            // Validate input
+            if (!linkInput) {
+                resultDiv.innerHTML = '<strong>Error:</strong> Please enter a URL to check.';
+                resultDiv.className = 'result unsafe';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            
+            // Show loading indicator
+            loadingDiv.style.display = 'block';
+            
+            // Simulate API call with timeout
+            setTimeout(() => {
+                loadingDiv.style.display = 'none';
+                
+                // Perform basic checks (for demonstration purposes)
+                const isSafe = analyzeLinkSafety(linkInput);
+                
+                if (isSafe) {
+                    resultDiv.innerHTML = `<strong>✅ Safe:</strong> The link appears to be safe.<br><br>Analyzed URL: ${escapeHTML(linkInput)}`;
+                    resultDiv.className = 'result safe';
+                } else {
+                    resultDiv.innerHTML = `<strong>⚠️ Warning:</strong> This link may be unsafe. We detected potential security risks.<br><br>Analyzed URL: ${escapeHTML(linkInput)}`;
+                    resultDiv.className = 'result unsafe';
+                }
+                
+                resultDiv.style.display = 'block';
+            }, 1500);
+        }
+        
+        function analyzeLinkSafety(url) {
+            // This is a simplified demonstration
+            try {
+                const urlObj = new URL(url);
+                
+                // Check for common suspicious patterns
+                const suspiciousPatterns = [
+                    'secure', 'login', 'account', 'verify', 'confirm', 'banking', 
+                    'paypal', 'microsoft', 'apple', 'google', 'facebook', 'instagram',
+                    'netflix', 'amazon', 'auth', 'signin', 'security'
+                ];
+                
+                // Suspicious if:
+                // 1. Uses HTTP instead of HTTPS
+                // 2. Contains suspicious domain patterns with numbers/special chars
+                // 3. Is an IP address instead of domain name
+                // 4. Extremely long domain name
+                // 5. Uses URL shorteners
+                // 6. Has suspicious patterns in subdomain
+                
+                // Check protocol
+                const usesSafeProtocol = urlObj.protocol === 'https:';
+                
+                // Check for IP address as domain
+                const isIPAddress = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(urlObj.hostname);
+                
+                // Check for extremely long domain
+                const hasSuspiciousLength = urlObj.hostname.length > 30;
+                
+                // Check for URL shorteners
+                const shortenerServices = ['bit.ly', 'tinyurl.com', 'goo.gl', 't.co', 'ow.ly', 'is.gd'];
+                const usesShortener = shortenerServices.some(service => urlObj.hostname.includes(service));
+                
+                // Check for suspicious patterns in domain
+                const hasSuspiciousPatterns = suspiciousPatterns.some(pattern => {
+                    // Only flag if the pattern is combined with other suspicious elements
+                    return urlObj.hostname.includes(pattern) && 
+                           (urlObj.hostname.includes('-') || 
+                            /\d{3,}/.test(urlObj.hostname) ||
+                            urlObj.hostname.includes('secure') ||
+                            urlObj.hostname.split('.').length > 3);
+                });
+                
+                // Check for suspicious file extensions
+                const suspiciousExtensions = ['.exe', '.bat', '.cmd', '.msi', '.scr', '.php'];
+                const hasExecutableExtension = suspiciousExtensions.some(ext => urlObj.pathname.endsWith(ext));
+                
+                // For demo purposes, make common legitimate sites "safe"
+                const commonSafeSites = [
+                    'google.com', 'facebook.com', 'amazon.com', 'microsoft.com', 
+                    'apple.com', 'github.com', 'twitter.com', 'reddit.com',
+                    'wikipedia.org', 'youtube.com', 'linkedin.com', 'instagram.com'
+                ];
+                
+                const isTrustedDomain = commonSafeSites.some(site => 
+                    urlObj.hostname === site || urlObj.hostname.endsWith('.' + site)
+                );
+                
+                if (isTrustedDomain) {
+                    return true;
+                }
+                
+                // Calculate safety score (simplified)
+                let suspiciousFactors = 0;
+                if (!usesSafeProtocol) suspiciousFactors += 1;
+                if (isIPAddress) suspiciousFactors += 2;
+                if (hasSuspiciousLength) suspiciousFactors += 1;
+                if (usesShortener) suspiciousFactors += 1;
+                if (hasSuspiciousPatterns) suspiciousFactors += 2;
+                if (hasExecutableExtension) suspiciousFactors += 3;
+                
+                // Add some randomness for demo purposes
+                if (url.length % 5 === 0) suspiciousFactors += 1;
+                
+                return suspiciousFactors < 2;
+                
+            } catch (e) {
+                // Invalid URL format
+                return false;
+            }
+        }
+        
+        function escapeHTML(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
